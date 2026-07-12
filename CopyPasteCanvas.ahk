@@ -255,9 +255,9 @@ CaptureNextPoint(&x, &y, message) {
 }
 
 StartMacro(*) {
-    global isEnabled, click1Set, click2Set, click3Set, click4Set, statusLabel
+    global isEnabled, click1Set, click2Set, click4Set, click5Set, statusLabel
 
-    if (!click1Set || !click2Set) && (!click3Set || !click4Set) {
+    if (!click1Set || !click2Set) && (!click4Set || !click5Set) {
         statusLabel.SetFont("cB42318")
         statusLabel.Text := "SET FLOW COORDINATES FIRST"
         return
@@ -276,12 +276,12 @@ StopMacro(*) {
 }
 
 UpdateReadyStatus() {
-    global isEnabled, click1Set, click2Set, click3Set, click4Set, statusLabel
+    global isEnabled, click1Set, click2Set, click4Set, click5Set, statusLabel
 
     if isEnabled {
         statusLabel.SetFont("c18794E")
         statusLabel.Text := "STARTED — PRESS ' OR / TO RUN"
-    } else if (click1Set && click2Set) || (click3Set && click4Set) {
+    } else if (click1Set && click2Set) || (click4Set && click5Set) {
         statusLabel.SetFont("c245A8D")
         statusLabel.Text := "READY — CLICK START"
     }
@@ -343,29 +343,27 @@ ClickNextButton(showGuiAfter := true) {
 
 RunFlow2(*) {
     global isEnabled, isCapturing
-    global click3Set, click4Set, click4X, click4Y, statusLabel, mainGui
+    global click4Set, click5Set, click4X, click4Y, click5X, click5Y, statusLabel
 
     if !isEnabled || isCapturing
         return
 
-    if !click3Set || !click4Set {
+    if !click4Set || !click5Set {
         statusLabel.SetFont("cB42318")
-        statusLabel.Text := "SET CLICK 3 AND 4 FIRST"
+        statusLabel.Text := "SET CLICK 4 AND 5 FIRST"
         return
     }
 
-    if !ClickNextButton(false) {
-        mainGui.Show("AutoSize")
-        return
-    }
-
-    Sleep(100)
     Click(click4X, click4Y)
+    Sleep(100)
+    MouseMove(click5X, click5Y)
+    Send("{WheelDown}")
+    Sleep(100)
+    Click(click5X, click5Y)
     Sleep(100)
     Send("^v")
     Sleep(100)
     Send("{Enter}")
-    mainGui.Show("AutoSize")
 }
 
 FindNextButton(&buttonX, &buttonY) {
