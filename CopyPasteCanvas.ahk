@@ -7,10 +7,13 @@ global isEnabled := false
 global isCapturing := false
 global click1Set := false
 global click2Set := false
+global click3Set := false
 global click1X := 0
 global click1Y := 0
 global click2X := 0
 global click2Y := 0
+global click3X := 0
+global click3Y := 0
 
 mainGui := Gui(, "Click & Paste Macro")
 mainGui.BackColor := "F4F6F8"
@@ -37,6 +40,15 @@ click2Label := mainGui.AddText("xm y+5 w230 h28 +0x200 BackgroundFFFFFF c66717D"
 setClick2Button := mainGui.AddButton("x+10 yp w140 h28", "Coordinates Checker 2")
 setClick2Button.OnEvent("Click", CaptureClick2)
 
+mainGui.SetFont("s10 w600", "Segoe UI")
+mainGui.AddText("xm y+16 c20252B", "Click 3")
+mainGui.SetFont("s9 norm", "Segoe UI")
+click3Label := mainGui.AddText("xm y+5 w230 h28 +0x200 BackgroundFFFFFF c66717D", "  Not set")
+setClick3Button := mainGui.AddButton("x+10 yp w140 h28", "Coordinates Checker 3")
+setClick3Button.OnEvent("Click", CaptureClick3)
+click3Button := mainGui.AddButton("xm y+10 w380 h30", "Click 3")
+click3Button.OnEvent("Click", Click3)
+
 mainGui.AddText("xm y+18 w380 0x10")
 statusLabel := mainGui.AddText("xm y+12 w380 h24 Center +0x200 BackgroundFFFFFF cA35B00", "STOPPED")
 
@@ -50,6 +62,7 @@ exitButton.OnEvent("Click", (*) => ExitApp())
 mainGui.OnEvent("Close", (*) => ExitApp())
 
 Hotkey("'", RunFlow)
+Hotkey(";", Click3)
 
 ; Force the panel to stay pinned on top of active application layouts
 mainGui.Opt("+AlwaysOnTop")
@@ -75,6 +88,18 @@ CaptureClick2(*) {
         click2Y := y
         click2Set := true
         click2Label.Text := "  X: " x "    Y: " y
+        UpdateReadyStatus()
+    }
+}
+
+CaptureClick3(*) {
+    global click3Set, click3X, click3Y, click3Label
+
+    if CaptureNextPoint(&x, &y, "Click the location for Click 3") {
+        click3X := x
+        click3Y := y
+        click3Set := true
+        click3Label.Text := "  X: " x "    Y: " y
         UpdateReadyStatus()
     }
 }
@@ -164,4 +189,19 @@ RunFlow(*) {
     Send("^v")
     Sleep(100)
     Send("{Enter}")
+}
+
+Click3(*) {
+    global isCapturing, click3Set, click3X, click3Y, statusLabel
+
+    if isCapturing
+        return
+
+    if !click3Set {
+        statusLabel.SetFont("cB42318")
+        statusLabel.Text := "SET CLICK 3 COORDINATE FIRST"
+        return
+    }
+
+    Click(click3X, click3Y)
 }
