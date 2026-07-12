@@ -32,7 +32,7 @@ mainGui.MarginY := 18
 mainGui.SetFont("s16 w600", "Segoe UI")
 titleText := mainGui.AddText("xm w380 Center c20252B", "Click & Paste")
 mainGui.SetFont("s9 norm", "Segoe UI")
-helpText := mainGui.AddText("xm y+4 w380 Center c66717D", "Press ' for Flow 1, [ for Flow 2")
+helpText := mainGui.AddText("xm y+4 w380 Center c66717D", "Press ' for Flow 1, / for Flow 2")
 
 mainGui.SetFont("s10 w600", "Segoe UI")
 click1Header := mainGui.AddText("xm y+20 c20252B", "Click 1")
@@ -91,7 +91,7 @@ mainGui.OnEvent("Close", (*) => ExitApp())
 
 Hotkey("'", RunFlow)
 Hotkey(";", Click3)
-Hotkey("[", RunFlow2)
+Hotkey("/", RunFlow2)
 
 setupControls := [
     helpText,
@@ -265,7 +265,7 @@ StartMacro(*) {
 
     isEnabled := true
     statusLabel.SetFont("c18794E")
-    statusLabel.Text := "STARTED — PRESS ' OR [ TO RUN"
+    statusLabel.Text := "STARTED — PRESS ' OR / TO RUN"
 }
 
 StopMacro(*) {
@@ -280,7 +280,7 @@ UpdateReadyStatus() {
 
     if isEnabled {
         statusLabel.SetFont("c18794E")
-        statusLabel.Text := "STARTED — PRESS ' OR [ TO RUN"
+        statusLabel.Text := "STARTED — PRESS ' OR / TO RUN"
     } else if (click1Set && click2Set) || (click3Set && click4Set) {
         statusLabel.SetFont("c245A8D")
         statusLabel.Text := "READY — CLICK START"
