@@ -2,6 +2,7 @@
 #SingleInstance Force
 
 CoordMode("Mouse", "Screen")
+CoordMode("Pixel", "Screen")
 
 global isEnabled := false
 global isCapturing := false
@@ -192,7 +193,7 @@ RunFlow(*) {
 }
 
 Click3(*) {
-    global isCapturing, click3Set, click3X, click3Y, statusLabel
+    global isCapturing, click3Set, statusLabel, mainGui
 
     if isCapturing
         return
@@ -203,5 +204,82 @@ Click3(*) {
         return
     }
 
-    Click(click3X, click3Y)
+    mainGui.Hide()
+    Sleep(50)
+
+    if FindNextButton(&nextX, &nextY) {
+        Click(nextX, nextY)
+        mainGui.Show("AutoSize")
+    } else {
+        mainGui.Show("AutoSize")
+        statusLabel.SetFont("cB42318")
+        statusLabel.Text := "NEXT BUTTON NOT FOUND"
+    }
+}
+
+FindNextButton(&buttonX, &buttonY) {
+    global click3X, click3Y
+
+    searchLeft := Max(0, click3X - 450)
+    searchTop := Max(0, click3Y - 850)
+    searchRight := Min(A_ScreenWidth - 1, click3X + 450)
+    searchBottom := Min(A_ScreenHeight - 1, click3Y + 850)
+
+    ; Common blue shades used by the Next button. Search near the saved Click 3
+    ; point so unrelated blue controls elsewhere on the screen are ignored.
+    for blue in [0x0D5B97, 0x0D5E9F, 0x005EA8, 0x0067B1, 0x115C97] {
+        nextLeft := searchLeft
+        nextTop := searchTop
+
+        while PixelSearch(&foundX, &foundY, nextLeft, nextTop, searchRight, searchBottom, blue, 30) {
+            if GetBlueButtonCenter(foundX, foundY, searchLeft, searchTop, searchRight, searchBottom, &buttonX, &buttonY)
+                return true
+
+            if foundX < searchRight {
+                nextLeft := foundX + 1
+                nextTop := foundY
+            } else {
+                nextLeft := searchLeft
+                nextTop := foundY + 1
+                if nextTop > searchBottom
+                    break
+            }
+        }
+    }
+
+    return false
+}
+
+GetBlueButtonCenter(startX, startY, limitLeft, limitTop, limitRight, limitBottom, &centerX, &centerY) {
+    left := startX
+    right := startX
+    top := startY
+    bottom := startY
+
+    while left > limitLeft && IsNextButtonBlue(PixelGetColor(left - 1, startY))
+        left -= 1
+    while right < limitRight && IsNextButtonBlue(PixelGetColor(right + 1, startY))
+        right += 1
+    while top > limitTop && IsNextButtonBlue(PixelGetColor(startX, top - 1))
+        top -= 1
+    while bottom < limitBottom && IsNextButtonBlue(PixelGetColor(startX, bottom + 1))
+        bottom += 1
+
+    width := right - left + 1
+    height := bottom - top + 1
+
+    if width < 45 || width > 150 || height < 22 || height > 70
+        return false
+
+    centerX := Round((left + right) / 2)
+    centerY := Round((top + bottom) / 2)
+    return true
+}
+
+IsNextButtonBlue(color) {
+    red := (color >> 16) & 0xFF
+    green := (color >> 8) & 0xFF
+    blue := color & 0xFF
+
+    return blue >= 110 && green >= 60 && green <= 135 && red <= 45
 }
