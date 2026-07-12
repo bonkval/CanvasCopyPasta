@@ -325,6 +325,7 @@
 
       let rawText = activeBlock.innerText;
       let currentTitle = "Unknown Question";
+      let selectedAnswers = getSelectedAnswerTexts(activeBlock);
 
       let titleEl = activeBlock.querySelector(".header, .question_header, .name");
       if (titleEl && titleEl.innerText.trim()) {
@@ -335,6 +336,7 @@
       for (let line of lines) {
           let trimmed = line.trim();
           if (trimmed === "Group of answer choices" || trimmed === "Correct Answer" || trimmed === "Your Answer:") continue;
+          if (selectedAnswers.has(trimmed)) trimmed += " (selected)";
           if (trimmed.length > 0 && !seenLines.has(trimmed)) { seenLines.add(trimmed); uniqueLines.push(trimmed); }
       }
 
@@ -348,6 +350,47 @@
           }
       }
       return { text: cleanedText.trim(), title: currentTitle };
+  }
+
+  function getSelectedAnswerTexts(activeBlock) {
+      let selectedTexts = new Set();
+      let checkedInputs = activeBlock.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked');
+
+      for (let input of checkedInputs) {
+          let answerText = getAnswerTextForInput(input, activeBlock);
+          if (answerText) selectedTexts.add(answerText);
+      }
+
+      return selectedTexts;
+  }
+
+  function getAnswerTextForInput(input, activeBlock) {
+      let label = input.closest("label");
+      if (!label && input.id) {
+          label = activeBlock.querySelector(`label[for="${cssEscape(input.id)}"]`);
+      }
+
+      if (label) {
+          let labelText = label.innerText.trim();
+          if (labelText) return labelText;
+      }
+
+      let answerContainer = input.closest(".answer, .answer_label, .answer_text, li, p, div");
+      if (answerContainer) {
+          let containerText = answerContainer.innerText.trim();
+          if (containerText) return containerText;
+      }
+
+      let siblingText = input.nextSibling && input.nextSibling.textContent ? input.nextSibling.textContent.trim() : "";
+      return siblingText;
+  }
+
+  function cssEscape(value) {
+      if (window.CSS && typeof window.CSS.escape === "function") {
+          return window.CSS.escape(value);
+      }
+
+      return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   }
 
   setInterval(injectDashboard, 1000);
