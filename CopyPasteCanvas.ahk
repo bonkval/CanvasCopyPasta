@@ -1,0 +1,167 @@
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+CoordMode("Mouse", "Screen")
+
+global isEnabled := false
+global isCapturing := false
+global click1Set := false
+global click2Set := false
+global click1X := 0
+global click1Y := 0
+global click2X := 0
+global click2Y := 0
+
+mainGui := Gui(, "Click & Paste Macro")
+mainGui.BackColor := "F4F6F8"
+mainGui.SetFont("s10", "Segoe UI")
+mainGui.MarginX := 20
+mainGui.MarginY := 18
+
+mainGui.SetFont("s16 w600", "Segoe UI")
+mainGui.AddText("xm w380 Center c20252B", "Click & Paste")
+mainGui.SetFont("s9 norm", "Segoe UI")
+mainGui.AddText("xm y+4 w380 Center c66717D", "Press ' to run: Click 1  →  Click 2  →  Ctrl+V  →  Enter")
+
+mainGui.SetFont("s10 w600", "Segoe UI")
+mainGui.AddText("xm y+20 c20252B", "Click 1")
+mainGui.SetFont("s9 norm", "Segoe UI")
+click1Label := mainGui.AddText("xm y+5 w230 h28 +0x200 BackgroundFFFFFF c66717D", "  Not set")
+setClick1Button := mainGui.AddButton("x+10 yp w140 h28", "Coordinates Checker 1")
+setClick1Button.OnEvent("Click", CaptureClick1)
+
+mainGui.SetFont("s10 w600", "Segoe UI")
+mainGui.AddText("xm y+16 c20252B", "Click 2")
+mainGui.SetFont("s9 norm", "Segoe UI")
+click2Label := mainGui.AddText("xm y+5 w230 h28 +0x200 BackgroundFFFFFF c66717D", "  Not set")
+setClick2Button := mainGui.AddButton("x+10 yp w140 h28", "Coordinates Checker 2")
+setClick2Button.OnEvent("Click", CaptureClick2)
+
+mainGui.AddText("xm y+18 w380 0x10")
+statusLabel := mainGui.AddText("xm y+12 w380 h24 Center +0x200 BackgroundFFFFFF cA35B00", "STOPPED")
+
+startButton := mainGui.AddButton("xm y+16 w118 h34", "Start")
+stopButton := mainGui.AddButton("x+13 yp w118 h34", "Stop")
+exitButton := mainGui.AddButton("x+13 yp w118 h34", "Exit")
+
+startButton.OnEvent("Click", StartMacro)
+stopButton.OnEvent("Click", StopMacro)
+exitButton.OnEvent("Click", (*) => ExitApp())
+mainGui.OnEvent("Close", (*) => ExitApp())
+
+Hotkey("'", RunFlow)
+
+; Force the panel to stay pinned on top of active application layouts
+mainGui.Opt("+AlwaysOnTop")
+mainGui.Show("AutoSize")
+
+CaptureClick1(*) {
+    global click1Set, click1X, click1Y, click1Label
+
+    if CaptureNextPoint(&x, &y, "Click the location for Click 1") {
+        click1X := x
+        click1Y := y
+        click1Set := true
+        click1Label.Text := "  X: " x "    Y: " y
+        UpdateReadyStatus()
+    }
+}
+
+CaptureClick2(*) {
+    global click2Set, click2X, click2Y, click2Label
+
+    if CaptureNextPoint(&x, &y, "Click the location for Click 2") {
+        click2X := x
+        click2Y := y
+        click2Set := true
+        click2Label.Text := "  X: " x "    Y: " y
+        UpdateReadyStatus()
+    }
+}
+
+CaptureNextPoint(&x, &y, message) {
+    global isCapturing, mainGui
+
+    if isCapturing
+        return false
+
+    isCapturing := true
+    mainGui.Hide()
+    ToolTip(message ".`nPress Esc to cancel.")
+
+    ; Wait for the button used on the GUI to be released before capturing.
+    KeyWait("LButton")
+
+    while true {
+        if GetKeyState("Escape", "P") {
+            KeyWait("Escape")
+            ToolTip()
+            mainGui.Show()
+            isCapturing := false
+            return false
+        }
+
+        if GetKeyState("LButton", "P") {
+            MouseGetPos(&x, &y)
+            KeyWait("LButton")
+            ToolTip()
+            mainGui.Show()
+            isCapturing := false
+            return true
+        }
+
+        Sleep(10)
+    }
+}
+
+StartMacro(*) {
+    global isEnabled, click1Set, click2Set, statusLabel
+
+    if !click1Set || !click2Set {
+        statusLabel.SetFont("cB42318")
+        statusLabel.Text := "SET BOTH COORDINATES FIRST"
+        return
+    }
+
+    isEnabled := true
+    statusLabel.SetFont("c18794E")
+    statusLabel.Text := "STARTED — PRESS ' TO RUN"
+}
+
+StopMacro(*) {
+    global isEnabled, statusLabel
+    isEnabled := false
+    statusLabel.SetFont("cA35B00")
+    statusLabel.Text := "STOPPED"
+}
+
+UpdateReadyStatus() {
+    global isEnabled, click1Set, click2Set, statusLabel
+
+    if isEnabled {
+        statusLabel.SetFont("c18794E")
+        statusLabel.Text := "STARTED — PRESS ' TO RUN"
+    } else if click1Set && click2Set {
+        statusLabel.SetFont("c245A8D")
+        statusLabel.Text := "READY — CLICK START"
+    }
+}
+
+RunFlow(*) {
+    global isEnabled, isCapturing
+    global click1Set, click2Set, click1X, click1Y, click2X, click2Y
+
+    if !isEnabled || isCapturing || !click1Set || !click2Set
+        return
+
+    Click(click1X, click1Y)
+    Sleep(100)
+    MouseMove(click2X, click2Y)
+    Send("{WheelDown}")
+    Sleep(100)
+    Click(click2X, click2Y)
+    Sleep(100)
+    Send("^v")
+    Sleep(100)
+    Send("{Enter}")
+}
