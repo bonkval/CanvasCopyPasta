@@ -362,7 +362,7 @@ RunFlow2(*) {
     Click(click5X, click5Y)
     Sleep(100)
     Send("^v")
-    Sleep(100)
+    Sleep(1000)
     Send("{Enter}")
 }
 
