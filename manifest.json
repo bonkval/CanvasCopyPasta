@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "FEU Canvas Quiz Harvester Dashboard",
+  "version": "4.2",
+  "description": "Injects an interactive question copying dashboard directly into the Canvas workspace.",
+  "permissions": ["activeTab", "clipboardWrite"],
+  "content_scripts": [
+    {
+      "matches": ["https://feu.instructure.com/*"],
+      "js": ["content.js"],
+      "all_frames": true
+    }
+  ]
+}
