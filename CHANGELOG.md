@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.1.0 - 2026-09-08
+
+- Added automatic detection of meaningful images inside the active question.
+- Added an image-copy button that copies one image or combines multiple images into one PNG.
+- Added image descriptions to plain-text question output and clear image-copy failure feedback.
+
 ## 5.0.0 - 2026-09-08
 
 - Replaced one-second polling with immediate startup and a debounced DOM observer.

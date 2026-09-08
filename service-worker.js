@@ -48,6 +48,22 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => restoreOrigins().catch(() => {}));
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "fetch-image") {
+    (async () => {
+      const url = new URL(message.url);
+      if (!/^https?:$/.test(url.protocol)) throw new Error("Unsupported image address.");
+      const allowed = await chrome.permissions.contains({ origins:[`${url.origin}/*`] });
+      if (!allowed) throw new Error("The browser has not granted access to this image host.");
+      const response = await fetch(url.href, { credentials:"include" });
+      if (!response.ok) throw new Error(`Image request failed (${response.status}).`);
+      const blob = await response.blob();
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 32768) binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+      sendResponse({ ok:true, dataUrl:`data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}` });
+    })().catch((error) => sendResponse({ ok:false, error:error.message }));
+    return true;
+  }
   if (message?.type !== "register-origin") return false;
   (async () => {
     const origin = normalizeOrigin(message.origin);

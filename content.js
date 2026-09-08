@@ -17,6 +17,7 @@
   let refreshQueued = false;
   let drag;
   let saveTimer;
+  let displayedImageCount = 0;
 
   async function loadSettings() {
     if (!globalThis.chrome?.runtime?.id || !chrome.storage?.local) return;
@@ -46,7 +47,10 @@
     if (!element) return "";
     const clone = element.cloneNode(true);
     clone.querySelectorAll("script, style, button, input, select, textarea, .screenreader-only").forEach((node) => node.remove());
-    clone.querySelectorAll("img[alt]").forEach((image) => image.replaceWith(document.createTextNode(image.alt)));
+    clone.querySelectorAll("img").forEach((image) => {
+      const description = image.alt?.trim();
+      image.replaceWith(document.createTextNode(description ? `[Image: ${description}]` : "[Question image]"));
+    });
     clone.querySelectorAll("[aria-label]").forEach((node) => {
       if (!node.textContent.trim()) node.textContent = node.getAttribute("aria-label") || "";
     });
@@ -94,6 +98,19 @@
     return text ? { text, title } : null;
   }
 
+  function collectQuestionImages(block) {
+    if (!block) return [];
+    return [...block.querySelectorAll("img, canvas")].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      const width = element.naturalWidth || element.width || rect.width;
+      const height = element.naturalHeight || element.height || rect.height;
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && width >= 40 && height >= 40
+        && style.display !== "none" && style.visibility !== "hidden"
+        && element.getAttribute("aria-hidden") !== "true";
+    });
+  }
+
   function createHost() {
     if (host?.isConnected || !document.body) return;
     host = undefined;
@@ -117,6 +134,7 @@
         button { font:inherit }.round { display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;transition:all .15s ease }
         #copy { width:36px;height:36px;background:#f4f4f4;border:1px solid #ddd;font-size:15px } #copy:hover { background:#e6e6e6 }
         #custom { width:36px;height:36px;background:#EAAA00;border:0;font-size:15px;box-shadow:0 2px 6px rgba(234,170,0,.3) } #custom:hover { background:#cc9600 }
+        #image { width:36px;height:36px;background:#f4f4f4;border:1px solid #ddd;font-size:15px } #image:hover { background:#e6e6e6 }
         #toggle { width:30px;height:30px;background:transparent;border:0;font-size:14px;transform:${settings.expanded ? "rotate(45deg)" : "none"} }
         button:focus-visible,textarea:focus-visible,input:focus-visible { outline:2px solid #2ec4b6;outline-offset:2px }
         #drawer { display:${settings.expanded ? "flex" : "none"};flex-direction:column;gap:8px;width:140px;padding-left:6px;border-left:1px solid #eaeaea }
@@ -132,6 +150,7 @@
         <div id="rail"><span id="indicator" aria-hidden="true"></span>
           <button id="copy" class="round" type="button" title="Copy clean text" aria-label="Copy clean question text">📋</button>
           <button id="custom" class="round" type="button" title="Copy question and append prompt" aria-label="Copy question with AI prompt">⚡</button>
+          ${displayedImageCount ? `<button id="image" class="round" type="button" title="Copy ${displayedImageCount === 1 ? "question image" : `${displayedImageCount} question images as one PNG`}" aria-label="Copy question image">🖼️</button>` : ""}
           <button id="toggle" class="round" type="button" title="Toggle settings" aria-label="Toggle settings">⚙️</button>
         </div>
         <div id="drawer">
@@ -153,6 +172,7 @@
     q("#reset").addEventListener("click", () => { saveSettings({ moveMode: false, moved: false, x: 16, y: 100 }, true); renderPanel(); positionPanel(); });
     q("#copy").addEventListener("click", () => copyCurrent(false));
     q("#custom").addEventListener("click", () => copyCurrent(true));
+    q("#image")?.addEventListener("click", copyQuestionImages);
     q("#panel").addEventListener("pointerdown", beginDrag);
   }
 
@@ -204,6 +224,71 @@
     document.body.appendChild(area); area.select(); const copied = document.execCommand("copy"); area.remove();
     if (!copied) throw new Error("Copy failed");
   }
+
+  async function copyQuestionImages() {
+    const images = collectQuestionImages(activeQuestion || findActiveQuestion());
+    if (!images.length) return feedback(false, "#image", "No question image found.");
+    if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+      return feedback(false, "#image", "This browser cannot copy images. Update the browser and try again.");
+    }
+    try {
+      const pngPromise = createCombinedPng(images);
+      await navigator.clipboard.write([new ClipboardItem({ "image/png":pngPromise }, { presentationStyle:"attachment" })]);
+      const message = images.length === 1 ? "Question image copied. Paste it, then copy the text." : `${images.length} images copied as one PNG. Paste it, then copy the text.`;
+      feedback(true, "#image", message);
+    } catch (error) {
+      feedback(false, "#image", error?.message || "The question image could not be copied.");
+    }
+  }
+
+  async function createCombinedPng(elements) {
+    const bitmaps = [];
+    try {
+      for (const element of elements) bitmaps.push(await createImageBitmap(await imageBlob(element)));
+      const maxWidth = 1600;
+      const maxHeight = 4096;
+      const gap = bitmaps.length > 1 ? 16 : 0;
+      let sizes = bitmaps.map((bitmap) => {
+        const scale = Math.min(1, maxWidth / bitmap.width);
+        return { width:Math.max(1, Math.round(bitmap.width * scale)), height:Math.max(1, Math.round(bitmap.height * scale)) };
+      });
+      const initialHeight = sizes.reduce((sum, size) => sum + size.height, 0) + gap * (sizes.length - 1);
+      if (initialHeight > maxHeight) {
+        const scale = maxHeight / initialHeight;
+        sizes = sizes.map((size) => ({ width:Math.max(1, Math.round(size.width * scale)), height:Math.max(1, Math.round(size.height * scale)) }));
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(...sizes.map((size) => size.width));
+      canvas.height = sizes.reduce((sum, size) => sum + size.height, 0) + gap * (sizes.length - 1);
+      const context = canvas.getContext("2d", { alpha:false });
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      let y = 0;
+      bitmaps.forEach((bitmap, index) => {
+        const size = sizes[index];
+        context.drawImage(bitmap, Math.round((canvas.width - size.width) / 2), y, size.width, size.height);
+        y += size.height + gap;
+      });
+      return await new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Could not create a PNG.")), "image/png"));
+    } finally { bitmaps.forEach((bitmap) => bitmap.close()); }
+  }
+
+  async function imageBlob(element) {
+    if (element instanceof HTMLCanvasElement) {
+      return new Promise((resolve, reject) => element.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas image is protected.")), "image/png"));
+    }
+    const url = element.currentSrc || element.src;
+    if (!url) throw new Error("The question image has no usable address.");
+    try {
+      const response = await fetch(url, { credentials:"include" });
+      if (!response.ok) throw new Error(`Image request failed (${response.status}).`);
+      return response.blob();
+    } catch (pageError) {
+      const response = await chrome.runtime.sendMessage({ type:"fetch-image", url });
+      if (!response?.ok) throw new Error(response?.error || pageError.message || "Image access was blocked.");
+      return fetch(response.dataUrl).then((result) => result.blob());
+    }
+  }
   function feedback(success, selector, message) {
     if (!shadow) return;
     const indicator = shadow.querySelector("#indicator"); const status = shadow.querySelector("#status"); const button = selector ? shadow.querySelector(selector) : null;
@@ -228,6 +313,8 @@
   }
   function refresh() {
     refreshQueued = false; createHost(); activeQuestion = findActiveQuestion(); if (!host) return;
+    const imageCount = collectQuestionImages(activeQuestion).length;
+    if (imageCount !== displayedImageCount) { displayedImageCount = imageCount; renderPanel(); }
     host.style.display = settings.visible && activeQuestion ? "block" : "none"; if (activeQuestion) positionPanel();
   }
   function queueRefresh() { if (!refreshQueued) { refreshQueued = true; requestAnimationFrame(refresh); } }
