@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Canvas Copy Assistant</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header><img src="icons/icon-48.png" alt=""><div><h1>Canvas Copy Assistant</h1><p>School access</p></div></header>
+    <label for="school-url">Canvas school URL</label>
+    <input id="school-url" type="url" inputmode="url" placeholder="https://school.instructure.com">
+    <div class="actions"><button id="detect" type="button">Auto detect</button><button id="save" class="primary" type="button">Allow & save</button></div>
+    <p id="status" role="status" aria-live="polite">FEU Canvas works by default.</p>
+    <p class="hint">Open a Canvas page first, then select Auto detect. Browser permission is requested only for that school site.</p>
+  </main>
+  <script src="core.js"></script><script src="popup.js"></script>
+</body>
+</html>

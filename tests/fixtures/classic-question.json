@@ -1,0 +1,9 @@
+{
+  "title": "Question 1",
+  "points": "1 pts",
+  "prompt": "Which option is correct?",
+  "answers": [
+    { "text": "Option A", "selected": false },
+    { "text": "Option B", "selected": true }
+  ]
+}

@@ -1,0 +1,11 @@
+:root { color-scheme:light; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif }
+* { box-sizing:border-box } body { width:320px;margin:0;background:#fff;color:#222 }
+main { padding:16px } header { display:flex;align-items:center;gap:10px;margin-bottom:16px }
+header img { width:42px;height:42px } h1 { margin:0;color:#006400;font-size:16px } header p { margin:2px 0 0;color:#777;font-size:12px }
+label { display:block;margin-bottom:5px;color:#555;font-size:11px;font-weight:700 }
+input { width:100%;padding:9px 10px;border:1px solid #bbb;border-radius:6px;font-size:12px }
+input:focus-visible,button:focus-visible { outline:2px solid #2ec4b6;outline-offset:2px }
+.actions { display:flex;gap:8px;margin-top:10px } button { flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;background:#f4f4f4;cursor:pointer;font-size:12px;font-weight:700 }
+button.primary { border-color:#EAAA00;background:#EAAA00;color:#173b17 } button:hover { filter:brightness(.96) }
+#status { min-height:16px;margin:12px 0 0;color:#006400;font-size:11px;font-weight:700 }
+#status.error { color:#b42318 }.hint { margin:8px 0 0;color:#777;font-size:10px;line-height:1.4 }

@@ -1,0 +1,14 @@
+{
+  "name": "canvas-copy-assistant",
+  "version": "5.0.0",
+  "private": true,
+  "description": "Fast local copy assistant for authorized Canvas quiz workflows.",
+  "scripts": {
+    "test": "node --test",
+    "lint": "node scripts/quality.mjs",
+    "check": "npm run lint && npm test",
+    "package": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
