@@ -90,7 +90,7 @@
       const clone = block.cloneNode(true);
       // Some Canvas layouts use `.header` for the entire question content,
       // including the stem. Remove only known title/points elements here.
-      clone.querySelectorAll(".question_header, .name, .points, .question_points, .answers, .answer_group, button, input, select, textarea").forEach((node) => node.remove());
+      clone.querySelectorAll(".name, .points, .question_points, .answers, .answer_group, button, input, select, textarea").forEach((node) => node.remove());
       prompt = readableText(clone);
     }
     if (!answers.length) {

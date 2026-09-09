@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.1.2 - 2026-09-09
+
+- Fixed fallback extraction for Canvas layouts that use `.question_header` around the question stem.
+
 ## 5.1.1 - 2026-09-09
 
 - Fixed copying question stems from Canvas layouts whose question content uses a broad header container.
