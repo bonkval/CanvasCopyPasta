@@ -71,7 +71,8 @@
     const title = Core.cleanLines(readableText(titleEl))[0] || "Question";
     const pointsEl = block.querySelector(".points, .question_points, [class*='points']");
     const points = Core.cleanLines(readableText(pointsEl))[0] || "";
-    const promptEl = block.querySelector(".question_text, .user_content, .question-body, [data-testid='question-stem'], [class*='question_text']");
+    const promptSelector = ".question_text, .user_content, .question-body, [data-testid='question-stem'], [class*='question_text']";
+    const promptEl = block.matches?.(promptSelector) ? block : block.querySelector(promptSelector);
     let prompt = readableText(promptEl);
     const answerNodes = [...block.querySelectorAll(".answers .answer, .answer_group .answer, [data-testid='answer'], [role='radio'], [role='checkbox']")];
     const answers = [];
@@ -87,7 +88,9 @@
     }
     if (!prompt) {
       const clone = block.cloneNode(true);
-      clone.querySelectorAll(".question_header, .header, .name, .points, .question_points, .answers, .answer_group, button, input, select, textarea").forEach((node) => node.remove());
+      // Some Canvas layouts use `.header` for the entire question content,
+      // including the stem. Remove only known title/points elements here.
+      clone.querySelectorAll(".question_header, .name, .points, .question_points, .answers, .answer_group, button, input, select, textarea").forEach((node) => node.remove());
       prompt = readableText(clone);
     }
     if (!answers.length) {
