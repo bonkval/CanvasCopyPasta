@@ -41,6 +41,7 @@ test("content extractor handles a question stem whose element is the image", () 
 
 test("fallback extraction does not remove the question content header", () => {
   const source = readFileSync(join(__dirname, "..", "content.js"), "utf8");
+  assert.match(source, /const fallbackRoots = \[block, block\.parentElement, block\.parentElement\?\.parentElement\]/);
   assert.match(source, /clone\.querySelectorAll\("\.name, \.points/);
   assert.doesNotMatch(source, /clone\.querySelectorAll\("\.question_header/);
 });

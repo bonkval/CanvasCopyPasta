@@ -72,8 +72,15 @@
     const pointsEl = block.querySelector(".points, .question_points, [class*='points']");
     const points = Core.cleanLines(readableText(pointsEl))[0] || "";
     const promptSelector = ".question_text, .user_content, .question-body, [data-testid='question-stem'], [class*='question_text']";
-    const promptEl = block.matches?.(promptSelector) ? block : block.querySelector(promptSelector);
-    let prompt = readableText(promptEl);
+    const promptElements = [
+      ...(block.matches?.(promptSelector) ? [block] : []),
+      ...block.querySelectorAll(promptSelector)
+    ];
+    // Canvas can include empty/hidden user-content wrappers before the actual
+    // stem. Prefer the candidate containing the most readable text.
+    let prompt = promptElements
+      .map((element) => readableText(element))
+      .sort((left, right) => right.length - left.length)[0] || "";
     const answerNodes = [...block.querySelectorAll(".answers .answer, .answer_group .answer, [data-testid='answer'], [role='radio'], [role='checkbox']")];
     const answers = [];
     const seenNodes = new Set();
@@ -87,11 +94,16 @@
       if (Core.cleanLines(text).length) answers.push({ text, selected });
     }
     if (!prompt) {
-      const clone = block.cloneNode(true);
-      // Some Canvas layouts use `.header` for the entire question content,
-      // including the stem. Remove only known title/points elements here.
-      clone.querySelectorAll(".name, .points, .question_points, .answers, .answer_group, button, input, select, textarea").forEach((node) => node.remove());
-      prompt = readableText(clone);
+      // Some Canvas layouts put the stem in a parent wrapper rather than in
+      // one of the known stem classes. Check the active block and its nearby
+      // parents while stripping only known non-stem content.
+      const fallbackRoots = [block, block.parentElement, block.parentElement?.parentElement].filter(Boolean);
+      const fallbackPrompts = fallbackRoots.map((root) => {
+        const clone = root.cloneNode(true);
+        clone.querySelectorAll(".name, .points, .question_points, .answers, .answer_group, button, input, select, textarea").forEach((node) => node.remove());
+        return readableText(clone);
+      });
+      prompt = fallbackPrompts.sort((left, right) => right.length - left.length)[0] || "";
     }
     if (!answers.length) {
       for (const input of block.querySelectorAll("input[type='radio'], input[type='checkbox']")) {

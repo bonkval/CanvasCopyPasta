@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.1.3 - 2026-09-09
+
+- Improved question-stem extraction for Canvas layouts with unexpected wrapper elements.
+
 ## 5.1.2 - 2026-09-09
 
 - Fixed fallback extraction for Canvas layouts that use `.question_header` around the question stem.
