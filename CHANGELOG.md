@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.1.1 - 2026-09-09
+
+- Fixed copying question stems from Canvas layouts whose question content uses a broad header container.
+- Fixed extraction of image- and canvas-based question stems.
+
 ## 5.1.0 - 2026-09-08
 
 - Added automatic detection of meaningful images inside the active question.
