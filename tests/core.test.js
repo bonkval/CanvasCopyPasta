@@ -32,3 +32,9 @@ test("selects the visible candidate nearest the viewport center", () => {
   const hidden = { element:"hidden", rect:{ top:900, bottom:1000, width:100, height:100 } };
   assert.equal(Core.chooseNearestCandidate([first, middle, hidden], 800), "middle");
 });
+
+test("content extractor handles a question stem whose element is the image", () => {
+  const source = readFileSync(join(__dirname, "..", "content.js"), "utf8");
+  assert.match(source, /if \(element\.matches\?\.\("img, canvas"\)\)/);
+  assert.match(source, /return description \? `\[Image: \$\{description\}\]` : "\[Question image\]"/);
+});

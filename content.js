@@ -45,6 +45,10 @@
 
   function readableText(element) {
     if (!element) return "";
+    if (element.matches?.("img, canvas")) {
+      const description = element.alt?.trim();
+      return description ? `[Image: ${description}]` : "[Question image]";
+    }
     const clone = element.cloneNode(true);
     clone.querySelectorAll("script, style, button, input, select, textarea, .screenreader-only").forEach((node) => node.remove());
     clone.querySelectorAll("img").forEach((image) => {
