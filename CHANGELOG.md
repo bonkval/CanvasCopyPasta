@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.2 - 2026-09-10
+
+- Removed image filename labels and captions such as `.png`, `.gif`, and `.jpg` from copied output while preserving the images.
+
 ## 5.2.1 - 2026-09-10
 
 - Removed literal HTML tags, image attributes, comments, and non-breaking spaces from copied question text.

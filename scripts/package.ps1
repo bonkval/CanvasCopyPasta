@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $distRoot = Join-Path $projectRoot "dist"
 $stageRoot = Join-Path $distRoot "canvas-copy-assistant"
-$archivePath = Join-Path $distRoot "canvas-copy-assistant-v5.2.1.zip"
+$archivePath = Join-Path $distRoot "canvas-copy-assistant-v5.2.2.zip"
 
 if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
 if (Test-Path -LiteralPath $archivePath) { Remove-Item -LiteralPath $archivePath -Force }

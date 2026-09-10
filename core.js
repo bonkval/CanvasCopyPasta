@@ -49,6 +49,13 @@
     return (duplicatedBoolean ? duplicatedBoolean[1] : answer).trim();
   }
 
+  function cleanImageDescription(text) {
+    const description = cleanLines(text).join(" ");
+    if (!description) return "";
+    const filename = description.split(/[\\/]/).pop().split(/[?#]/)[0];
+    return /^[^<>:"/\\|?*]+\.[a-z\d]{2,8}$/i.test(filename) ? "" : description;
+  }
+
   function buildQuestionText(parts) {
     const title = String(parts.title || "").trim();
     const points = String(parts.points || "").trim();
@@ -79,7 +86,7 @@
     const question = buildQuestionText(parts);
     const result = formatReviewResult(parts.result);
     const images = (parts.images || []).map((image, index) => {
-      const description = cleanLines(image.alt || image.description).join(" ");
+      const description = cleanImageDescription(image.alt || image.description);
       return `[Image ${index + 1}${description ? `: ${description}` : ""}]`;
     });
     return [question, result, images.length ? `Images:\n${images.join("\n")}` : ""]
@@ -105,9 +112,9 @@
       return `<p>${escapeHtml(cleanAnswerText(answer.text))}${suffix}</p>`;
     }).filter(Boolean).join("");
     const images = (parts.images || []).map((image, index) => {
-      const alt = escapeHtml(image.alt || image.description || `Question image ${index + 1}`);
+      const alt = escapeHtml(cleanImageDescription(image.alt || image.description));
       const source = escapeHtml(image.dataUrl || "");
-      return source ? `<figure><img src="${source}" alt="${alt}"><figcaption>${alt}</figcaption></figure>` : "";
+      return source ? `<figure><img src="${source}" alt="${alt}"></figure>` : "";
     }).filter(Boolean).join("");
     return `<article><h2>${title}</h2>${result ? `<p><strong>${result}</strong></p>` : ""}<p>${prompt.replace(/\n/g, "<br>")}</p>${images ? `<section class="images">${images}</section>` : ""}${answers ? `<section class="answers">${answers}</section>` : ""}</article>`;
   }
@@ -129,5 +136,5 @@
     return best;
   }
 
-  return { QUESTION_SELECTOR, FALLBACK_SELECTOR, normalizeSchoolOrigin, cleanLines, cleanAnswerText, buildQuestionText, formatReviewResult, buildReviewText, buildReviewHtml, escapeHtml, chooseNearestCandidate };
+  return { QUESTION_SELECTOR, FALLBACK_SELECTOR, normalizeSchoolOrigin, cleanLines, cleanAnswerText, cleanImageDescription, buildQuestionText, formatReviewResult, buildReviewText, buildReviewHtml, escapeHtml, chooseNearestCandidate };
 });

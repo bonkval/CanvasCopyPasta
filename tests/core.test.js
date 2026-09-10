@@ -36,6 +36,15 @@ test("treats non-breaking-space paragraphs as spaces and removes Canvas answer m
   );
 });
 
+test("removes image filenames without removing image content", () => {
+  assert.equal(Core.cleanImageDescription("5.png"), "");
+  assert.equal(Core.cleanImageDescription("/files/33.gif?download=1"), "");
+  assert.equal(Core.cleanImageDescription("Network topology diagram"), "Network topology diagram");
+  const html = Core.buildReviewHtml({ images:[{ alt:"5.png", dataUrl:"data:image/png;base64,abc" }] });
+  assert.match(html, /data:image\/png;base64,abc/);
+  assert.doesNotMatch(html, /5\.png|<figcaption>/);
+});
+
 test("formats selected answers with correctness for review", () => {
   const text = Core.buildReviewText({
     title:"Question 2", points:"1 pts", prompt:"Choose one", result:{ score:0, max:1, correct:false },

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "minimum_chrome_version": "96",
   "name": "Canvas Copy Assistant",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "description": "Quickly copies Canvas quiz questions for authorized AI-assisted learning workflows.",
   "permissions": ["activeTab", "clipboardWrite", "storage", "scripting"],
   "host_permissions": ["https://feu.instructure.com/*"],

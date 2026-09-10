@@ -46,13 +46,13 @@
   function readableText(element) {
     if (!element) return "";
     if (element.matches?.("img, canvas")) {
-      const description = element.alt?.trim();
+      const description = Core.cleanImageDescription(element.alt);
       return description ? `[Image: ${description}]` : "[Question image]";
     }
     const clone = element.cloneNode(true);
     clone.querySelectorAll("script, style, button, input, select, textarea, .screenreader-only").forEach((node) => node.remove());
     clone.querySelectorAll("img").forEach((image) => {
-      const description = image.alt?.trim();
+      const description = Core.cleanImageDescription(image.alt);
       image.replaceWith(document.createTextNode(description ? `[Image: ${description}]` : "[Question image]"));
     });
     clone.querySelectorAll("[aria-label]").forEach((node) => {
@@ -153,7 +153,7 @@
   }
 
   function imageDescription(element, index) {
-    return element.alt?.trim() || (element instanceof HTMLCanvasElement ? `Question drawing ${index + 1}` : `Question image ${index + 1}`);
+    return Core.cleanImageDescription(element.alt);
   }
 
   function blobToDataUrl(blob) {
