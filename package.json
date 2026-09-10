@@ -1,8 +1,8 @@
 {
   "name": "canvas-copy-assistant",
-  "version": "5.4.1",
+  "version": "5.4.2",
   "private": true,
-  "description": "Fast local copy assistant for authorized Canvas quiz workflows.",
+  "description": "Fast local copy and answer-list assistant for authorized Canvas quiz workflows.",
   "scripts": {
     "test": "node --test",
     "lint": "node scripts/quality.mjs",

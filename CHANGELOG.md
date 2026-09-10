@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.2 - 2026-09-10
+
+- Updated README and privacy documentation for answer-list mode, checkbox answers, image handling, local storage, and manual submission.
+
 ## 5.4.1 - 2026-09-10
 
 - Removed exact duplicate answer labels produced by some Canvas question layouts.

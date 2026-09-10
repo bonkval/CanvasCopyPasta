@@ -1,6 +1,6 @@
 # Canvas Copy Assistant
 
-Canvas Copy Assistant is a lightweight browser extension that places a compact copy toolbar beside the currently visible Canvas quiz question. It can copy clean question text or append a user-configurable prompt for workflows where AI assistance is explicitly allowed.
+Canvas Copy Assistant is a lightweight browser extension that places a compact toolbar beside the currently visible Canvas question. It supports local question copying, review exports, and applying a user-provided answer list for workflows where AI assistance and automation are explicitly allowed.
 
 > [!IMPORTANT]
 > This project is for convenience, accessibility, study, review, and quizzes that are explicitly AI-assisted or AI-integrated. It is not intended to bypass academic rules or enable cheating. Always follow your instructor's assessment policy and your school's academic-integrity rules.
@@ -13,8 +13,9 @@ Canvas Copy Assistant is a lightweight browser extension that places a compact c
 - Shows an image button when the active question contains an image; multiple images are combined into one PNG for easy pasting.
 - Marks selected radio and checkbox answers in copied text.
 - Copies every question on a review page in DOM order, including selected answers, per-question correctness, and organized inline images.
-- Applies a user-provided answer list to supported Canvas questions, with automatic multiple-choice matching and an explicit `text:` override for text boxes.
-- Preserves prompt, position, visibility, and copy history across reloads.
+- Removes literal HTML, image filenames, Canvas metadata, duplicate answer labels, and non-breaking spaces from copied text.
+- Applies a user-provided answer list to supported Canvas questions, with automatic radio matching, checkbox-group support, and an explicit `text:` override for text boxes.
+- Preserves prompt, answer list, position, visibility, and copy history across reloads.
 - Uses an isolated Shadow DOM so Canvas styles do not change the toolbar's appearance.
 - Supports keyboard focus, screen-reader labels, touch/pen dragging, and clipboard error feedback.
 - Supports FEU Canvas by default and lets users grant access to another Canvas school site.
@@ -62,6 +63,8 @@ Open a supported Canvas quiz. The compact green-and-gold toolbar appears beside 
 
 To move the toolbar, open settings, select **Move UI**, and drag the blank part of the panel. Select **Reset** to return it to the question gutter.
 
+Answer list mode is intentionally question-number based and accepts any number of questions. It validates every supplied answer before changing the page. If a choice is missing, ambiguous, disabled, or the requested text field cannot be identified, no answers are applied.
+
 ## Add another school
 
 FEU (`https://feu.instructure.com`) works by default.
@@ -79,6 +82,7 @@ The extension requests access only to the origin you approve. A school URL can a
 Node.js 18 or later is sufficient; the checks have no third-party dependencies.
 
 ```sh
+cd "C:\Users\cedri\OneDrive\Desktop\CopyPasteCanvas"
 npm test
 npm run lint
 npm run check
@@ -87,6 +91,7 @@ npm run check
 On Windows, create a distributable ZIP with:
 
 ```powershell
+cd "C:\Users\cedri\OneDrive\Desktop\CopyPasteCanvas"
 npm run package
 ```
 
@@ -94,11 +99,11 @@ The archive is written to `dist/`. Do not package development files or private q
 
 ## Privacy and permissions
 
-The extension performs question extraction locally in the page and writes only when you select a copy button. It does not send question content to a server. See [PRIVACY.md](PRIVACY.md) for details.
+The extension processes question extraction and answer-list matching locally in the page. It does not send question content or answers to a server. Clipboard content is written only after a copy action; page form controls change only after you select **Apply answers**. The extension never submits a quiz automatically. See [PRIVACY.md](PRIVACY.md) for details.
 
 ## Known compatibility notes
 
-Canvas markup varies by institution and quiz engine. Classic Quizzes and common New Quizzes structures are recognized, including same-origin frames. A separately hosted quiz tool may require granting that tool's origin through the extension popup. Please report a sanitized HTML fixture when reporting extraction bugs—never upload a real active assessment.
+Canvas markup varies by institution and quiz engine. Classic Quizzes and common New Quizzes structures are recognized, including same-origin frames. Common radio buttons, checkbox groups, textareas, text inputs, and contenteditable text fields are supported, but unusual custom controls may require a sanitized fixture. A separately hosted quiz tool may require granting that tool's origin through the extension popup. Never upload real active assessment content.
 
 ## Contributing and license
 
