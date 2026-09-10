@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.4.0 - 2026-09-10
+
+- Added checkbox-group support for multiple-answer questions using `|` or `;` separators.
+- Updated answer application to make checkbox selections match the supplied answer list exactly.
+
+## 5.3.0 - 2026-09-10
+
+- Added Answer list mode for applying user-supplied answers to Canvas questions.
+- Added automatic multiple-choice matching, `text:` field overrides, preview validation, and ambiguity protection.
+
 ## 5.2.2 - 2026-09-10
 
 - Removed image filename labels and captions such as `.png`, `.gif`, and `.jpg` from copied output while preserving the images.

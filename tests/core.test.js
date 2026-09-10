@@ -94,6 +94,11 @@ test("content extractor includes all-question review export support", () => {
   const source = readFileSync(join(__dirname, "..", "content.js"), "utf8");
   assert.match(source, /function collectAllQuestions\(\)/);
   assert.match(source, /Copy all reviewed questions/);
+  assert.match(source, /function parseAnswerList\(value\)/);
+  assert.match(source, /function applyAnswers\(\)/);
+  assert.match(source, /text\\s\*:/);
+  assert.match(source, /isCheckboxChoice/);
+  assert.match(source, /requested = entry\.answer\.split/);
   assert.match(source, /text\/html/);
   assert.match(source, /scoreMatch = text\.match/);
 });

@@ -8,7 +8,7 @@
   const DEFAULT_SETTINGS = {
     prompt: DEFAULT_PROMPT, expanded: false, visible: true, moveMode: false,
     moved: false, x: 16, y: 100, schoolOrigin: "https://feu.instructure.com",
-    lastCapturedTitle: "None"
+    lastCapturedTitle: "None", answerList: "", answerMode: false
   };
   let settings = { ...DEFAULT_SETTINGS };
   let host;
@@ -221,16 +221,17 @@
     shadow.innerHTML = `
       <style>
         :host { all:initial } * { box-sizing:border-box }
-        #panel { background:#fff;border-radius:${settings.expanded ? "16px" : "30px"};box-shadow:0 6px 20px rgba(0,0,0,.12);border:2px solid #006400;padding:10px 6px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:${settings.expanded ? "row" : "column"};align-items:center;gap:10px;width:${settings.expanded ? "210px" : "54px"};overflow:hidden;user-select:none;transition:width .25s ease-in-out,border-radius .25s ease-in-out;color:#222 }
+        #panel { background:#fff;border-radius:${settings.expanded || settings.answerMode ? "16px" : "30px"};box-shadow:0 6px 20px rgba(0,0,0,.12);border:2px solid #006400;padding:10px 6px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:${settings.expanded || settings.answerMode ? "row" : "column"};align-items:center;gap:10px;width:${settings.answerMode ? "310px" : settings.expanded ? "210px" : "54px"};overflow:hidden;user-select:none;transition:width .25s ease-in-out,border-radius .25s ease-in-out;color:#222 }
         #rail { display:flex;flex-direction:column;align-items:center;gap:10px;width:40px;flex-shrink:0 }
         #indicator { width:8px;height:8px;background:#EAAA00;border-radius:50%;display:inline-block }
         button { font:inherit }.round { display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;transition:all .15s ease }
         #copy { width:36px;height:36px;background:#f4f4f4;border:1px solid #ddd;font-size:15px } #copy:hover { background:#e6e6e6 }
         #custom { width:36px;height:36px;background:#EAAA00;border:0;font-size:15px;box-shadow:0 2px 6px rgba(234,170,0,.3) } #custom:hover { background:#cc9600 }
+        #answers { width:36px;height:36px;background:#eef8ee;border:1px solid #006400;color:#006400;font-size:13px } #answers:hover { background:#dff0df }
         #image { width:36px;height:36px;background:#f4f4f4;border:1px solid #ddd;font-size:15px } #image:hover { background:#e6e6e6 }
         #toggle { width:30px;height:30px;background:transparent;border:0;font-size:14px;transform:${settings.expanded ? "rotate(45deg)" : "none"} }
         button:focus-visible,textarea:focus-visible,input:focus-visible { outline:2px solid #2ec4b6;outline-offset:2px }
-        #drawer { display:${settings.expanded ? "flex" : "none"};flex-direction:column;gap:8px;width:140px;padding-left:6px;border-left:1px solid #eaeaea }
+        #drawer { display:${settings.expanded || settings.answerMode ? "flex" : "none"};flex-direction:column;gap:8px;width:${settings.answerMode ? "240px" : "140px"};padding-left:6px;border-left:1px solid #eaeaea }
         label,.caption { display:block;margin-bottom:2px;color:#555;font-size:10px;font-weight:bold;text-align:left }
         textarea,input[type=url] { width:100%;padding:4px 6px;font:11px inherit;border:1px solid #ccc;border-radius:4px;outline:0;background:#fff;color:#222 }
         textarea { min-height:42px;resize:vertical }.row { display:flex;gap:4px;width:100% }
@@ -238,37 +239,57 @@
         #move.active { background:#EAAA00;color:#006400;border-color:#006400 }
         #history { width:130px;color:#006400;font-size:11px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left }
         #all { width:100%;border-color:#006400;background:#eef8ee;color:#006400;font-size:10px }
+        #answer-list { min-height:180px;line-height:1.35;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px }
+        #answer-status { min-height:20px;color:#006400;font-size:10px;line-height:1.3;text-align:left }
+        #answer-status.error { color:#b42318 }
+        .answer-help { color:#777;font-size:10px;line-height:1.35 }
         #status { min-height:11px;color:#777;font-size:9px;line-height:1.2;text-align:left }
       </style>
       <div id="panel" role="toolbar" aria-label="Canvas Copy Assistant">
         <div id="rail"><span id="indicator" aria-hidden="true"></span>
           <button id="copy" class="round" type="button" title="Copy clean text" aria-label="Copy clean question text">📋</button>
           <button id="custom" class="round" type="button" title="Copy question and append prompt" aria-label="Copy question with AI prompt">⚡</button>
+          <button id="answers" class="round" type="button" title="Enter and apply your answer list" aria-label="Open answer list">A</button>
           ${displayedImageCount ? `<button id="image" class="round" type="button" title="Copy ${displayedImageCount === 1 ? "question image" : `${displayedImageCount} question images as one PNG`}" aria-label="Copy question image">🖼️</button>` : ""}
           <button id="toggle" class="round" type="button" title="Toggle settings" aria-label="Toggle settings">⚙️</button>
         </div>
         <div id="drawer">
+          <div id="answer-drawer" style="display:${settings.answerMode ? "block" : "none"}">
+            <div><label for="answer-list">Answer list:</label><textarea id="answer-list" placeholder="1. True\n2. Mac address\n3. text: 192.168.1.1\n4. Option A | Option C"></textarea><div class="answer-help">One answer per line. Choices are automatic. Use <code>text:</code> for a text box and <code>|</code> or <code>;</code> between checkbox answers.</div></div>
+            <div class="row"><button id="preview-answers" class="small" type="button">Preview</button><button id="apply-answers" class="small" type="button">Apply answers</button></div>
+            <div id="answer-status" role="status" aria-live="polite"></div>
+          </div>
+          <div id="settings-drawer" style="display:${settings.answerMode ? "none" : "block"}">
           <div><label for="prompt">Append Prompt:</label><textarea id="prompt"></textarea></div>
           <div><label for="school">School Canvas URL:</label><input id="school" type="url" inputmode="url"><span class="caption" style="font-weight:normal;color:#888">Use toolbar popup to add another school.</span></div>
           <button id="all" class="small" type="button" title="Copy every question with selected answers, review results, and images">Copy all reviewed questions</button>
           <div class="row"><button id="move" class="small${settings.moveMode ? " active" : ""}" type="button">${settings.moveMode ? "⚓ Locked" : "🤚 Move UI"}</button><button id="reset" class="small" type="button">🔄 Reset</button></div>
           <div><span class="caption">Last Copied:</span><div id="history"></div></div><div id="status" role="status" aria-live="polite"></div>
+          </div>
         </div>
       </div>`;
     const q = (selector) => shadow.querySelector(selector);
-    q("#prompt").value = settings.prompt;
-    q("#school").value = settings.schoolOrigin || location.origin;
+    const prompt = q("#prompt");
+    const school = q("#school");
+    const answerList = q("#answer-list");
+    if (prompt) prompt.value = settings.prompt;
+    if (school) school.value = settings.schoolOrigin || location.origin;
+    if (answerList) answerList.value = settings.answerList;
     q("#history").textContent = settings.lastCapturedTitle;
     q("#history").title = `Last Captured: ${settings.lastCapturedTitle}`;
-    q("#prompt").addEventListener("input", (event) => saveSettings({ prompt: event.target.value }));
-    q("#school").addEventListener("change", saveSchoolOrigin);
-    q("#toggle").addEventListener("click", () => { saveSettings({ expanded: !settings.expanded, moveMode: false }, true); renderPanel(); positionPanel(); });
-    q("#move").addEventListener("click", () => { saveSettings({ moveMode: !settings.moveMode }, true); renderPanel(); });
-    q("#reset").addEventListener("click", () => { saveSettings({ moveMode: false, moved: false, x: 16, y: 100 }, true); renderPanel(); positionPanel(); });
+    prompt?.addEventListener("input", (event) => saveSettings({ prompt: event.target.value }));
+    school?.addEventListener("change", saveSchoolOrigin);
+    answerList?.addEventListener("input", (event) => saveSettings({ answerList:event.target.value }));
+    q("#toggle").addEventListener("click", () => { saveSettings({ expanded: !settings.expanded, answerMode:false, moveMode: false }, true); renderPanel(); positionPanel(); });
+    q("#answers").addEventListener("click", () => { saveSettings({ answerMode: !settings.answerMode, expanded:false, moveMode:false }, true); renderPanel(); positionPanel(); });
+    q("#preview-answers")?.addEventListener("click", previewAnswers);
+    q("#apply-answers")?.addEventListener("click", applyAnswers);
+    q("#move")?.addEventListener("click", () => { saveSettings({ moveMode: !settings.moveMode }, true); renderPanel(); });
+    q("#reset")?.addEventListener("click", () => { saveSettings({ moveMode: false, moved: false, x: 16, y: 100 }, true); renderPanel(); positionPanel(); });
     q("#copy").addEventListener("click", () => copyCurrent(false));
     q("#custom").addEventListener("click", () => copyCurrent(true));
     q("#image")?.addEventListener("click", copyQuestionImages);
-    q("#all").addEventListener("click", copyAllQuestions);
+    q("#all")?.addEventListener("click", copyAllQuestions);
     q("#panel").addEventListener("pointerdown", beginDrag);
   }
 
@@ -302,6 +323,182 @@
   }
   function endDrag(event) { event.currentTarget.removeEventListener("pointermove", moveDrag); drag = null; }
   function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
+
+  function parseAnswerList(value) {
+    const lines = String(value || "").split(/\r?\n/);
+    const entries = [];
+    for (const line of lines.map((item) => item.trim()).filter(Boolean)) {
+      const match = line.match(/^(?:question\s*)?(\d+)\s*[.)\-:]\s*(.+)$/i) || line.match(/^(\d+)\s+(.+)$/);
+      if (!match) throw new Error(`Use one answer per line, for example: 1. True`);
+      let answer = match[2].trim();
+      let kind = "choice";
+      if (/^text\s*:/i.test(answer)) { kind = "text"; answer = answer.replace(/^text\s*:/i, "").trim(); }
+      else if (/^choice\s*:/i.test(answer)) answer = answer.replace(/^choice\s*:/i, "").trim();
+      answer = answer.replace(/^is\s+/i, "");
+      if (!answer) throw new Error(`Question ${match[1]} has an empty answer.`);
+      if (entries.some((entry) => entry.number === Number(match[1]))) throw new Error(`Question ${match[1]} is listed more than once.`);
+      entries.push({ number:Number(match[1]), answer, kind });
+    }
+    return entries;
+  }
+
+  function normalizeAnswer(value) {
+    return Core.cleanAnswerText(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  }
+
+  function isCheckboxChoice(choice) {
+    return choice.input?.type === "checkbox"
+      || choice.container.getAttribute("role") === "checkbox"
+      || Boolean(choice.container.querySelector("[role='checkbox']"));
+  }
+
+  function isChoiceSelected(choice) {
+    return Boolean(choice.input?.checked
+      || choice.container.getAttribute("aria-checked") === "true"
+      || choice.container.querySelector("[aria-checked='true']"));
+  }
+
+  function isChoiceDisabled(choice) {
+    return Boolean(choice.input?.disabled
+      || choice.container.getAttribute("aria-disabled") === "true"
+      || choice.container.querySelector("[aria-disabled='true']"));
+  }
+
+  function choiceCandidates(block) {
+    const nodes = [...block.querySelectorAll(".answers .answer, .answer_group .answer, [data-testid='answer'], [role='radio'], [role='checkbox']")];
+    const candidates = [];
+    const seen = new Set();
+    for (const node of nodes) {
+      const container = node.closest(".answer, label, [data-testid='answer']") || node;
+      if (seen.has(container)) continue;
+      seen.add(container);
+      const input = container.querySelector("input[type='radio'], input[type='checkbox']") || (node.matches("input") ? node : null);
+      const text = Core.cleanAnswerText(readableText(container));
+      if (text) candidates.push({ container, input, text });
+    }
+    return candidates;
+  }
+
+  function textFields(block) {
+    return [...block.querySelectorAll("textarea, input:not([type='radio']):not([type='checkbox']):not([type='hidden']), [contenteditable='true'], [role='textbox']")]
+      .filter((field) => !field.disabled && field.getAttribute("aria-hidden") !== "true");
+  }
+
+  function resolveAnswerPlan(entries) {
+    const blocks = findQuestionBlocks();
+    const plan = [];
+    const issues = [];
+    for (const entry of entries) {
+      const block = blocks[entry.number - 1];
+      if (!block) { issues.push(`Question ${entry.number} was not found.`); continue; }
+      const choices = choiceCandidates(block);
+      const fields = textFields(block);
+      if (entry.kind === "text" || (!choices.length && fields.length)) {
+        if (fields.length !== 1) {
+          issues.push(`Question ${entry.number} needs exactly one text field; found ${fields.length}.`);
+          continue;
+        }
+        plan.push({ entry, mode:"text", target:fields[0], label:`Question ${entry.number} → text box` });
+        continue;
+      }
+      const multipleAnswer = choices.some(isCheckboxChoice);
+      const requested = entry.answer.split(/\s*(?:\||;)\s*/).map((answer) => answer.trim()).filter(Boolean);
+      if (!multipleAnswer && requested.length > 1) {
+        issues.push(`Question ${entry.number} accepts one choice, but multiple answers were provided.`);
+        continue;
+      }
+      const targets = requested.map((answer) => {
+        const wanted = normalizeAnswer(answer);
+        return choices.filter((choice) => normalizeAnswer(choice.text) === wanted);
+      });
+      const missingIndex = targets.findIndex((matches) => matches.length !== 1);
+      if (missingIndex !== -1) {
+        const answer = requested[missingIndex];
+        issues.push(targets[missingIndex].length > 1
+          ? `Question ${entry.number} has multiple choices matching “${answer}”.`
+          : `Question ${entry.number} has no choice matching “${answer}”.`);
+        continue;
+      }
+      const selectedTargets = targets.map((matches) => matches[0]);
+      if (selectedTargets.some(isChoiceDisabled)) {
+        issues.push(`Question ${entry.number} has a disabled answer control.`);
+        continue;
+      }
+      if (multipleAnswer) {
+        const desired = new Set(selectedTargets);
+        plan.push({ entry, mode:"choices", targets:choices, desired, label:`Question ${entry.number} → ${requested.join(" + ")}` });
+      } else {
+        plan.push({ entry, mode:"choice", target:selectedTargets[0], label:`Question ${entry.number} → ${selectedTargets[0].text}` });
+      }
+    }
+    return { plan, issues };
+  }
+
+  function answerStatus(message, error = false) {
+    const status = shadow.querySelector("#answer-status");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("error", error);
+  }
+
+  function readAnswerPlan() {
+    try {
+      const entries = parseAnswerList(shadow.querySelector("#answer-list")?.value || settings.answerList);
+      const resolved = resolveAnswerPlan(entries);
+      return { ...resolved, entries };
+    } catch (error) {
+      return { plan:[], issues:[error.message], entries:[] };
+    }
+  }
+
+  function previewAnswers() {
+    const { plan, issues, entries } = readAnswerPlan();
+    if (!entries.length) return answerStatus("Enter answers first, one per line.", true);
+    if (issues.length) return answerStatus(`No changes made. ${issues.slice(0, 2).join(" ")}`, true);
+    answerStatus(`Ready to apply ${plan.length} answer${plan.length === 1 ? "" : "s"}. Nothing has been changed yet.`);
+  }
+
+  function setTextField(field, value) {
+    field.scrollIntoView({ block:"center", behavior:"smooth" });
+    field.focus();
+    if (field.matches("[contenteditable='true'], [role='textbox']") && !("value" in field)) field.textContent = value;
+    else {
+      const prototype = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+      if (setter) setter.call(field, value); else field.value = value;
+    }
+    field.dispatchEvent(new InputEvent("input", { bubbles:true, inputType:"insertText", data:value }));
+    field.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  async function applyAnswers() {
+    const { plan, issues, entries } = readAnswerPlan();
+    if (!entries.length) return answerStatus("Enter answers first, one per line.", true);
+    if (issues.length) return answerStatus(`No changes made. ${issues.slice(0, 2).join(" ")}`, true);
+    const button = shadow.querySelector("#apply-answers");
+    if (button) button.disabled = true;
+    try {
+      for (const item of plan) {
+        if (item.mode === "text") setTextField(item.target, item.entry.answer);
+        else if (item.mode === "choices") {
+          item.targets[0].container.scrollIntoView({ block:"center", behavior:"smooth" });
+          for (const choice of item.targets) {
+            const shouldSelect = item.desired.has(choice);
+            if (shouldSelect === isChoiceSelected(choice)) continue;
+            (choice.input || choice.container).click();
+          }
+        } else {
+          item.target.container.scrollIntoView({ block:"center", behavior:"smooth" });
+          const control = item.target.input || item.target.container;
+          const selected = isChoiceSelected(item.target);
+          if (!selected) control.click();
+        }
+      }
+      answerStatus(`Applied ${plan.length} answer${plan.length === 1 ? "" : "s"}. Review them before submitting.`);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
 
   async function copyCurrent(withPrompt) {
     const data = extractQuestion(activeQuestion || findActiveQuestion());
@@ -440,7 +637,7 @@
       host.style.left = `${clamp(Number(settings.x) || 0, 0, Math.max(0, innerWidth - rect.width))}px`;
       host.style.top = `${clamp(Number(settings.y) || 0, 0, Math.max(0, innerHeight - rect.height))}px`;
     } else {
-      const rect = activeQuestion.getBoundingClientRect(); const width = settings.expanded ? 210 : 54;
+      const rect = activeQuestion.getBoundingClientRect(); const width = settings.answerMode ? 310 : settings.expanded ? 210 : 54;
       host.style.position = "absolute";
       host.style.left = `${clamp(scrollX + rect.left - width - 20, scrollX + 4, scrollX + innerWidth - width - 4)}px`;
       host.style.top = `${Math.max(scrollY + 4, scrollY + rect.top + 10)}px`;

@@ -13,6 +13,7 @@ Canvas Copy Assistant is a lightweight browser extension that places a compact c
 - Shows an image button when the active question contains an image; multiple images are combined into one PNG for easy pasting.
 - Marks selected radio and checkbox answers in copied text.
 - Copies every question on a review page in DOM order, including selected answers, per-question correctness, and organized inline images.
+- Applies a user-provided answer list to supported Canvas questions, with automatic multiple-choice matching and an explicit `text:` override for text boxes.
 - Preserves prompt, position, visibility, and copy history across reloads.
 - Uses an isolated Shadow DOM so Canvas styles do not change the toolbar's appearance.
 - Supports keyboard focus, screen-reader labels, touch/pen dragging, and clipboard error feedback.
@@ -56,6 +57,7 @@ Open a supported Canvas quiz. The compact green-and-gold toolbar appears beside 
 - **Lightning:** copies the question and appends your saved prompt.
 - **Image:** appears when the question contains an image and copies it as PNG. Paste the image first, then use Clipboard or Lightning to copy the accompanying text.
 - **Gear:** opens prompt, school URL, position, history, and the **Copy all reviewed questions** action. The all-question action writes both plain text and rich HTML to the clipboard; images stay beneath the question that contains them when pasted into a rich editor.
+- **A:** opens Answer list mode. Enter one answer per line, preview the matches, and select **Apply answers**. Multiple choice is automatic; use `text:` for a text box, for example `3. text: 192.168.1.1`, or `|`/`;` between answers for checkbox questions, for example `4. Option A | Option C`. The tool does not submit the quiz.
 - **Backslash (`\\`):** hides or shows the toolbar while focus is not inside a text field.
 
 To move the toolbar, open settings, select **Move UI**, and drag the blank part of the panel. Select **Reset** to return it to the question gutter.
