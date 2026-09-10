@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.2.1 - 2026-09-10
+
+- Removed literal HTML tags, image attributes, comments, and non-breaking spaces from copied question text.
+- Kept question images available through the organized image export.
+
+## 5.2.0 - 2026-09-10
+
+- Added a review export that copies all questions in page order with selected answers, detected correctness, and inline question images.
+- Added plain-text fallback when the browser cannot write rich clipboard content.
+
 ## 5.1.3 - 2026-09-09
 
 - Improved question-stem extraction for Canvas layouts with unexpected wrapper elements.

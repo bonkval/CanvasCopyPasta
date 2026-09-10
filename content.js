@@ -65,6 +65,28 @@
     return globalThis.CSS?.escape ? CSS.escape(value) : String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
   }
 
+  function reviewState(element) {
+    if (!element) return undefined;
+    const className = typeof element.className === "string" ? element.className : "";
+    const stateText = `${className} ${element.getAttribute?.("aria-label") || ""} ${element.getAttribute?.("title") || ""}`;
+    if (/incorrect|wrong/i.test(stateText)) return false;
+    if (/(^|[\s_-])(correct|correct_answer|right_answer)(?=$|[\s_-])/i.test(stateText)) return true;
+    return undefined;
+  }
+
+  function parseQuestionResult(block) {
+    const text = readableText(block);
+    const scoreMatch = text.match(/(\d+(?:\.\d+)?)\s+out\s+of\s+(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+(?:\.\d+)?)\s*pts?)?/i);
+    const score = scoreMatch ? Number(scoreMatch[1]) : undefined;
+    const max = scoreMatch ? Number(scoreMatch[3] ?? scoreMatch[2]) : undefined;
+    const explicit = reviewState(block);
+    return {
+      score,
+      max,
+      correct: explicit !== undefined ? explicit : (score != null && max != null && max > 0 ? score >= max : undefined)
+    };
+  }
+
   function extractQuestion(block) {
     if (!block) return null;
     const titleEl = block.querySelector(".question_header, .header, .name, [data-testid='question-title']");
@@ -91,7 +113,7 @@
       const input = container.querySelector("input[type='radio'], input[type='checkbox']") || (node.matches("input") ? node : null);
       const selected = Boolean(input?.checked || node.getAttribute("aria-checked") === "true" || container.getAttribute("aria-checked") === "true");
       const text = readableText(container);
-      if (Core.cleanLines(text).length) answers.push({ text, selected });
+      if (Core.cleanLines(text).length) answers.push({ text, selected, correct:reviewState(container) ?? reviewState(node) ?? reviewState(input) });
     }
     if (!prompt) {
       // Some Canvas layouts put the stem in a parent wrapper rather than in
@@ -110,11 +132,63 @@
         const label = input.closest("label") || (input.id ? block.querySelector(`label[for='${cssEscape(input.id)}']`) : null);
         const container = label || input.closest(".answer, li, p, div");
         const text = readableText(container);
-        if (Core.cleanLines(text).length) answers.push({ text, selected: input.checked });
+        if (Core.cleanLines(text).length) answers.push({ text, selected: input.checked, correct:reviewState(container) ?? reviewState(input) });
       }
     }
+    const result = parseQuestionResult(block);
+    answers.forEach((answer) => {
+      if (answer.correct === undefined && answer.selected && result.correct !== undefined) answer.correct = result.correct;
+    });
     const text = Core.buildQuestionText({ title, points, prompt, answers });
-    return text ? { text, title } : null;
+    return text ? { text, title, points, prompt, answers, result } : null;
+  }
+
+  function findQuestionBlocks() {
+    const all = [...document.querySelectorAll(Core.QUESTION_SELECTOR)];
+    const leaves = all.filter((candidate) => !all.some((other) => other !== candidate && candidate.contains(other)));
+    return (leaves.length ? leaves : all).sort((left, right) => {
+      if (left === right) return 0;
+      return left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+  }
+
+  function imageDescription(element, index) {
+    return element.alt?.trim() || (element instanceof HTMLCanvasElement ? `Question drawing ${index + 1}` : `Question image ${index + 1}`);
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Could not prepare an image for the clipboard."));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function collectAllQuestions() {
+    const records = [];
+    for (const block of findQuestionBlocks()) {
+      const record = extractQuestion(block);
+      if (!record) continue;
+      record.images = [];
+      const imageElements = collectQuestionImages(block);
+      for (const [index, element] of imageElements.entries()) {
+        const image = { alt:imageDescription(element, index), dataUrl:"" };
+        try { image.dataUrl = await blobToDataUrl(await imageBlob(element)); } catch { /* Keep the text placeholder if an image cannot be read. */ }
+        record.images.push(image);
+      }
+      records.push(record);
+    }
+    return records;
+  }
+
+  function buildReviewExport(records) {
+    const numbered = records.map((record, index) => ({ ...record, title:`Question ${index + 1}` }));
+    const text = ["Canvas quiz review", ...numbered.map((record) => Core.buildReviewText(record))]
+      .join("\n\n-------------------------------------\n\n");
+    const body = numbered.map((record) => Core.buildReviewHtml(record)).join("\n");
+    const html = `<!doctype html><meta charset="utf-8"><title>Canvas quiz review</title><style>body{font:16px Arial,sans-serif;line-height:1.45;color:#172b4d;max-width:900px;margin:32px auto;padding:0 20px}article{border:1px solid #ccd3da;border-radius:8px;padding:20px;margin:0 0 20px}h2{margin-top:0}figure{margin:14px 0}figure img{display:block;max-width:100%;height:auto}figcaption{color:#5e6c84;font-size:13px;margin-top:4px}.answers p{margin:7px 0}</style>${body}`;
+    return { text, html };
   }
 
   function collectQuestionImages(block) {
@@ -163,6 +237,7 @@
         .small { flex:1;padding:4px 2px;border-radius:4px;border:1px solid #ccc;cursor:pointer;background:#fff;color:#222;font-size:9px;font-weight:bold }
         #move.active { background:#EAAA00;color:#006400;border-color:#006400 }
         #history { width:130px;color:#006400;font-size:11px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left }
+        #all { width:100%;border-color:#006400;background:#eef8ee;color:#006400;font-size:10px }
         #status { min-height:11px;color:#777;font-size:9px;line-height:1.2;text-align:left }
       </style>
       <div id="panel" role="toolbar" aria-label="Canvas Copy Assistant">
@@ -175,6 +250,7 @@
         <div id="drawer">
           <div><label for="prompt">Append Prompt:</label><textarea id="prompt"></textarea></div>
           <div><label for="school">School Canvas URL:</label><input id="school" type="url" inputmode="url"><span class="caption" style="font-weight:normal;color:#888">Use toolbar popup to add another school.</span></div>
+          <button id="all" class="small" type="button" title="Copy every question with selected answers, review results, and images">Copy all reviewed questions</button>
           <div class="row"><button id="move" class="small${settings.moveMode ? " active" : ""}" type="button">${settings.moveMode ? "⚓ Locked" : "🤚 Move UI"}</button><button id="reset" class="small" type="button">🔄 Reset</button></div>
           <div><span class="caption">Last Copied:</span><div id="history"></div></div><div id="status" role="status" aria-live="polite"></div>
         </div>
@@ -192,6 +268,7 @@
     q("#copy").addEventListener("click", () => copyCurrent(false));
     q("#custom").addEventListener("click", () => copyCurrent(true));
     q("#image")?.addEventListener("click", copyQuestionImages);
+    q("#all").addEventListener("click", copyAllQuestions);
     q("#panel").addEventListener("pointerdown", beginDrag);
   }
 
@@ -237,6 +314,45 @@
       feedback(true, withPrompt ? "#custom" : "#copy", `Copied ${data.title}`);
     } catch { feedback(false, withPrompt ? "#custom" : "#copy", "Clipboard blocked. Click the page and try again."); }
   }
+
+  async function copyAllQuestions() {
+    const button = shadow.querySelector("#all");
+    if (button) button.disabled = true;
+    const status = shadow.querySelector("#status");
+    if (status) status.textContent = "Reading all questions and images…";
+    try {
+      const records = await collectAllQuestions();
+      if (!records.length) return feedback(false, "#all", "No questions found on this page.");
+      const exportData = buildReviewExport(records);
+      const richClipboard = await writeClipboardBundle(exportData.text, exportData.html);
+      const imageCount = records.reduce((sum, record) => sum + record.images.filter((image) => image.dataUrl).length, 0);
+      const message = richClipboard
+        ? `Copied ${records.length} questions with ${imageCount} organized images.`
+        : `Copied ${records.length} questions as text. Rich image copy is unavailable here.`;
+      saveSettings({ lastCapturedTitle:`All ${records.length} questions` }, true);
+      feedback(true, "#all", message);
+    } catch (error) {
+      feedback(false, "#all", error?.message || "Could not copy all questions.");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function writeClipboardBundle(text, html) {
+    if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+      try {
+        const item = new ClipboardItem({
+          "text/plain":new Blob([text], { type:"text/plain" }),
+          "text/html":new Blob([html], { type:"text/html" })
+        });
+        await navigator.clipboard.write([item]);
+        return true;
+      } catch { /* Large or unsupported rich clipboard payloads still get a text export. */ }
+    }
+    await writeClipboard(text);
+    return false;
+  }
+
   async function writeClipboard(text) {
     if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
     const area = document.createElement("textarea"); area.value = text; area.style.cssText = "position:fixed;opacity:0;pointer-events:none";
