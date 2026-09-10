@@ -46,7 +46,15 @@
     let answer = metadata ? normalized.slice(0, metadata.index).trim() : normalized;
     if (metadata && /^\d+\s+/.test(answer)) answer = answer.replace(/^\d+\s+/, "");
     const duplicatedBoolean = answer.match(/^(True|False)\s+\1$/i);
-    return (duplicatedBoolean ? duplicatedBoolean[1] : answer).trim();
+    answer = duplicatedBoolean ? duplicatedBoolean[1] : answer;
+    const words = answer.split(/\s+/);
+    if (words.length > 1 && words.length % 2 === 0) {
+      const midpoint = words.length / 2;
+      const firstHalf = words.slice(0, midpoint).join(" ");
+      const secondHalf = words.slice(midpoint).join(" ");
+      if (firstHalf === secondHalf) answer = firstHalf;
+    }
+    return answer.trim();
   }
 
   function cleanImageDescription(text) {

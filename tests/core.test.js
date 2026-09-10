@@ -34,6 +34,7 @@ test("treats non-breaking-space paragraphs as spaces and removes Canvas answer m
     Core.cleanAnswerText("6195 False False exact_answer none 25187611 6195 0 (with margin: 0)"),
     "False"
   );
+  assert.equal(Core.cleanAnswerText("Late collision Late collision"), "Late collision");
 });
 
 test("removes image filenames without removing image content", () => {

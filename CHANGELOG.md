@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.1 - 2026-09-10
+
+- Removed exact duplicate answer labels produced by some Canvas question layouts.
+
 ## 5.4.0 - 2026-09-10
 
 - Added checkbox-group support for multiple-answer questions using `|` or `;` separators.
