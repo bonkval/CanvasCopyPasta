@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.4 - 2026-09-16
+
+- Fixed duplicated answer text when Canvas review rows include `Correct!` or `You Answered` status labels.
+
 ## 5.4.3 - 2026-09-16
 
 - Removed redundant point totals from all-question review exports.

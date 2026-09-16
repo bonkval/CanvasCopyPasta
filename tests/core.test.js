@@ -35,8 +35,8 @@ test("treats non-breaking-space paragraphs as spaces and removes Canvas answer m
     "False"
   );
   assert.equal(Core.cleanAnswerText("Late collision Late collision"), "Late collision");
-  assert.equal(Core.cleanAnswerText("Correct! 7114 Late collision Late collision"), "Correct! Late collision Late collision");
-  assert.equal(Core.cleanAnswerText("You Answered 6355 logging synchronous logging synchronous"), "You Answered logging synchronous logging synchronous");
+  assert.equal(Core.cleanAnswerText("Correct! 7114 Late collision Late collision"), "Correct! Late collision");
+  assert.equal(Core.cleanAnswerText("You Answered 6355 logging synchronous logging synchronous"), "You Answered logging synchronous");
 });
 
 test("removes image filenames without removing image content", () => {
@@ -72,7 +72,7 @@ test("formats Classic Quiz review text without scores or leaked icon IDs", () =>
       { text:"Crc errors" }, { text:"Runts" }, { text:"Latency" }
     ]
   });
-  assert.equal(correct, "Question 1\n\nIt is a collision that occurs after 512 bits of the frame have been transmitted.\n\nCorrect! Late collision Late collision (selected, correct)\nCrc errors\nRunts\nLatency");
+  assert.equal(correct, "Question 1\n\nIt is a collision that occurs after 512 bits of the frame have been transmitted.\n\nCorrect! Late collision (selected, correct)\nCrc errors\nRunts\nLatency");
 
   const wrong = Core.buildReviewText({
     title:"Question 2", points:"0 / 1 pts", prompt:"Which command is used to enable logging in console interface?",
@@ -82,7 +82,7 @@ test("formats Classic Quiz review text without scores or leaked icon IDs", () =>
       { text:"You Answered 6355 logging synchronous logging synchronous", selected:true, correct:false }
     ]
   });
-  assert.equal(wrong, "Question 2\n\nWhich command is used to enable logging in console interface?\n\nlogin (correct)\nenable login\nenable logging\nYou Answered logging synchronous logging synchronous (selected, wrong)");
+  assert.equal(wrong, "Question 2\n\nWhich command is used to enable logging in console interface?\n\nlogin (correct)\nenable login\nenable logging\nYou Answered logging synchronous (selected, wrong)");
 });
 
 test("builds rich review HTML with escaped text and embedded images", () => {

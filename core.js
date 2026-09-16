@@ -48,16 +48,19 @@
     // their visible status label and the answer text.
     answer = answer.replace(/^((?:Correct!|You Answered)\s+)\d+\s+/i, "$1");
     if (metadata && /^\d+\s+/.test(answer)) answer = answer.replace(/^\d+\s+/, "");
-    const duplicatedBoolean = answer.match(/^(True|False)\s+\1$/i);
-    answer = duplicatedBoolean ? duplicatedBoolean[1] : answer;
-    const words = answer.split(/\s+/);
+    const status = answer.match(/^(Correct!|You Answered)\s+(.+)$/i);
+    const prefix = status ? `${status[1]} ` : "";
+    let answerText = status ? status[2] : answer;
+    const duplicatedBoolean = answerText.match(/^(True|False)\s+\1$/i);
+    answerText = duplicatedBoolean ? duplicatedBoolean[1] : answerText;
+    const words = answerText.split(/\s+/);
     if (words.length > 1 && words.length % 2 === 0) {
       const midpoint = words.length / 2;
       const firstHalf = words.slice(0, midpoint).join(" ");
       const secondHalf = words.slice(midpoint).join(" ");
-      if (firstHalf === secondHalf) answer = firstHalf;
+      if (firstHalf === secondHalf) answerText = firstHalf;
     }
-    return answer.trim();
+    return `${prefix}${answerText}`.trim();
   }
 
   function cleanImageDescription(text) {
