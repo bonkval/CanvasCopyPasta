@@ -1,6 +1,6 @@
 {
   "name": "canvas-copy-assistant",
-  "version": "5.4.4",
+  "version": "5.4.5",
   "private": true,
   "description": "Fast local copy and answer-list assistant for authorized Canvas quiz workflows.",
   "scripts": {

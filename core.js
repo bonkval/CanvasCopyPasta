@@ -78,8 +78,9 @@
       const text = cleanAnswerText(answer.text);
       if (!text) return "";
       const labels = [];
-      if (answer.selected) labels.push("selected");
-      if (answer.correct === true) labels.push("correct");
+      const hasCorrectLabel = /^Correct!(?:\s|$)/i.test(text);
+      if (answer.selected && !hasCorrectLabel) labels.push("selected");
+      if (answer.correct === true && !hasCorrectLabel) labels.push("correct");
       if (answer.correct === false) labels.push("wrong");
       return labels.length ? `${text} (${labels.join(", ")})` : text;
     }).filter(Boolean);
@@ -99,7 +100,11 @@
   function buildReviewText(parts) {
     // Correctness is already attached to each answer. Repeating the numeric
     // score adds noise and, on Classic Quizzes, can appear as a bare 1 or 0.
-    const question = buildQuestionText({ ...parts, points:"" });
+    const answers = (parts.answers || []).map((answer) => ({
+      ...answer,
+      selected:parts.result?.correct === false ? false : answer.selected
+    }));
+    const question = buildQuestionText({ ...parts, points:"", answers });
     const images = (parts.images || []).map((image, index) => {
       const description = cleanImageDescription(image.alt || image.description);
       return `[Image ${index + 1}${description ? `: ${description}` : ""}]`;
@@ -118,12 +123,14 @@
     const title = escapeHtml(parts.title || "Question");
     const prompt = escapeHtml(cleanLines(parts.prompt).join("\n"));
     const answers = (parts.answers || []).map((answer) => {
+      const text = cleanAnswerText(answer.text);
       const labels = [];
-      if (answer.selected) labels.push("selected");
-      if (answer.correct === true) labels.push("correct");
+      const hasCorrectLabel = /^Correct!(?:\s|$)/i.test(text);
+      if (answer.selected && parts.result?.correct !== false && !hasCorrectLabel) labels.push("selected");
+      if (answer.correct === true && !hasCorrectLabel) labels.push("correct");
       if (answer.correct === false) labels.push("wrong");
       const suffix = labels.length ? ` <em>(${labels.join(", ")})</em>` : "";
-      return `<p>${escapeHtml(cleanAnswerText(answer.text))}${suffix}</p>`;
+      return `<p>${escapeHtml(text)}${suffix}</p>`;
     }).filter(Boolean).join("");
     const images = (parts.images || []).map((image, index) => {
       const alt = escapeHtml(cleanImageDescription(image.alt || image.description));

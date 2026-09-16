@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.4.5 - 2026-09-16
+
+- Prevented corrected answers from being labeled `(selected, wrong)` after a failed attempt.
+- Kept `(wrong)` only on the originally chosen wrong option and removed redundant correctness labels after `Correct!`.
+
 ## 5.4.4 - 2026-09-16
 
 - Fixed duplicated answer text when Canvas review rows include `Correct!` or `You Answered` status labels.

@@ -58,7 +58,7 @@ test("formats selected answers with correctness for review", () => {
     images:[{ alt:"Network diagram" }]
   });
   assert.doesNotMatch(text, /(?:0 \/ 1|1 pts|Result:)/);
-  assert.match(text, /Option A \(selected, wrong\)/);
+  assert.match(text, /Option A \(wrong\)/);
   assert.match(text, /Option B \(correct\)/);
   assert.match(text, /\[Image 1: Network diagram\]/);
 });
@@ -72,7 +72,7 @@ test("formats Classic Quiz review text without scores or leaked icon IDs", () =>
       { text:"Crc errors" }, { text:"Runts" }, { text:"Latency" }
     ]
   });
-  assert.equal(correct, "Question 1\n\nIt is a collision that occurs after 512 bits of the frame have been transmitted.\n\nCorrect! Late collision (selected, correct)\nCrc errors\nRunts\nLatency");
+  assert.equal(correct, "Question 1\n\nIt is a collision that occurs after 512 bits of the frame have been transmitted.\n\nCorrect! Late collision\nCrc errors\nRunts\nLatency");
 
   const wrong = Core.buildReviewText({
     title:"Question 2", points:"0 / 1 pts", prompt:"Which command is used to enable logging in console interface?",
@@ -82,7 +82,21 @@ test("formats Classic Quiz review text without scores or leaked icon IDs", () =>
       { text:"You Answered 6355 logging synchronous logging synchronous", selected:true, correct:false }
     ]
   });
-  assert.equal(wrong, "Question 2\n\nWhich command is used to enable logging in console interface?\n\nlogin (correct)\nenable login\nenable logging\nYou Answered logging synchronous (selected, wrong)");
+  assert.equal(wrong, "Question 2\n\nWhich command is used to enable logging in console interface?\n\nlogin (correct)\nenable login\nenable logging\nYou Answered logging synchronous (wrong)");
+});
+
+test("failed reviews keep only correct and wrong indicators", () => {
+  const text = Core.buildReviewText({
+    title:"Question 3", prompt:"Choose the configuration problem.",
+    result:{ score:0, max:1, correct:false },
+    answers:[
+      { text:"Correct! 7114 Wrong VLAN", selected:true, correct:true },
+      { text:"No IP address" },
+      { text:"Command entered incorrectly", selected:true, correct:false }
+    ]
+  });
+  assert.equal(text, "Question 3\n\nChoose the configuration problem.\n\nCorrect! Wrong VLAN\nNo IP address\nCommand entered incorrectly (wrong)");
+  assert.doesNotMatch(text, /selected/);
 });
 
 test("builds rich review HTML with escaped text and embedded images", () => {
@@ -126,6 +140,8 @@ test("content extractor includes all-question review export support", () => {
   assert.match(source, /requested = entry\.answer\.split/);
   assert.match(source, /text\/html/);
   assert.match(source, /scoreMatch = text\.match/);
+  assert.match(source, /\^Correct!/);
+  assert.match(source, /\^You Answered/);
 });
 
 test("fallback extraction does not remove the question content header", () => {

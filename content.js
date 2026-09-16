@@ -137,6 +137,9 @@
     }
     const result = parseQuestionResult(block);
     answers.forEach((answer) => {
+      const answerText = Core.cleanAnswerText(answer.text);
+      if (/^Correct!(?:\s|$)/i.test(answerText)) answer.correct = true;
+      else if (/^You Answered\b/i.test(answerText)) answer.correct = false;
       if (answer.correct === undefined && answer.selected && result.correct !== undefined) answer.correct = result.correct;
     });
     const text = Core.buildQuestionText({ title, points, prompt, answers });
