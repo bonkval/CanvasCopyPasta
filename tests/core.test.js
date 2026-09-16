@@ -35,6 +35,8 @@ test("treats non-breaking-space paragraphs as spaces and removes Canvas answer m
     "False"
   );
   assert.equal(Core.cleanAnswerText("Late collision Late collision"), "Late collision");
+  assert.equal(Core.cleanAnswerText("Correct! 7114 Late collision Late collision"), "Correct! Late collision Late collision");
+  assert.equal(Core.cleanAnswerText("You Answered 6355 logging synchronous logging synchronous"), "You Answered logging synchronous logging synchronous");
 });
 
 test("removes image filenames without removing image content", () => {
@@ -55,10 +57,32 @@ test("formats selected answers with correctness for review", () => {
     ],
     images:[{ alt:"Network diagram" }]
   });
-  assert.match(text, /Result: Incorrect \(0 \/ 1 pts\)/);
+  assert.doesNotMatch(text, /(?:0 \/ 1|1 pts|Result:)/);
   assert.match(text, /Option A \(selected, wrong\)/);
   assert.match(text, /Option B \(correct\)/);
   assert.match(text, /\[Image 1: Network diagram\]/);
+});
+
+test("formats Classic Quiz review text without scores or leaked icon IDs", () => {
+  const correct = Core.buildReviewText({
+    title:"Question 1", points:"1 / 1 pts", prompt:"It is a collision that occurs after 512 bits of the frame have been transmitted.",
+    result:{ score:1, max:1, correct:true },
+    answers:[
+      { text:"Correct! 7114 Late collision Late collision", selected:true, correct:true },
+      { text:"Crc errors" }, { text:"Runts" }, { text:"Latency" }
+    ]
+  });
+  assert.equal(correct, "Question 1\n\nIt is a collision that occurs after 512 bits of the frame have been transmitted.\n\nCorrect! Late collision Late collision (selected, correct)\nCrc errors\nRunts\nLatency");
+
+  const wrong = Core.buildReviewText({
+    title:"Question 2", points:"0 / 1 pts", prompt:"Which command is used to enable logging in console interface?",
+    result:{ score:0, max:1, correct:false },
+    answers:[
+      { text:"login", correct:true }, { text:"enable login" }, { text:"enable logging" },
+      { text:"You Answered 6355 logging synchronous logging synchronous", selected:true, correct:false }
+    ]
+  });
+  assert.equal(wrong, "Question 2\n\nWhich command is used to enable logging in console interface?\n\nlogin (correct)\nenable login\nenable logging\nYou Answered logging synchronous logging synchronous (selected, wrong)");
 });
 
 test("builds rich review HTML with escaped text and embedded images", () => {

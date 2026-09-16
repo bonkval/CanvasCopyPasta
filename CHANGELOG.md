@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.4.3 - 2026-09-16
+
+- Removed redundant point totals from all-question review exports.
+- Removed leaked Canvas icon IDs while preserving correct and selected-answer indicators.
+
 ## 5.4.2 - 2026-09-10
 
 - Updated README and privacy documentation for answer-list mode, checkbox answers, image handling, local storage, and manual submission.

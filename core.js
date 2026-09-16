@@ -44,6 +44,9 @@
     if (!normalized) return "";
     const metadata = normalized.match(/(?:\bexact_answer\b|\bwith\s+margin\s*:|\bwith\s+precision\s*:|\bbetween\s+\S[\s\S]*?margin\s+of\s+error\b)/i);
     let answer = metadata ? normalized.slice(0, metadata.index).trim() : normalized;
+    // Classic Quiz review icons can expose an internal numeric ID between
+    // their visible status label and the answer text.
+    answer = answer.replace(/^((?:Correct!|You Answered)\s+)\d+\s+/i, "$1");
     if (metadata && /^\d+\s+/.test(answer)) answer = answer.replace(/^\d+\s+/, "");
     const duplicatedBoolean = answer.match(/^(True|False)\s+\1$/i);
     answer = duplicatedBoolean ? duplicatedBoolean[1] : answer;
@@ -91,13 +94,14 @@
   }
 
   function buildReviewText(parts) {
-    const question = buildQuestionText(parts);
-    const result = formatReviewResult(parts.result);
+    // Correctness is already attached to each answer. Repeating the numeric
+    // score adds noise and, on Classic Quizzes, can appear as a bare 1 or 0.
+    const question = buildQuestionText({ ...parts, points:"" });
     const images = (parts.images || []).map((image, index) => {
       const description = cleanImageDescription(image.alt || image.description);
       return `[Image ${index + 1}${description ? `: ${description}` : ""}]`;
     });
-    return [question, result, images.length ? `Images:\n${images.join("\n")}` : ""]
+    return [question, images.length ? `Images:\n${images.join("\n")}` : ""]
       .filter(Boolean).join("\n\n");
   }
 
@@ -109,7 +113,6 @@
 
   function buildReviewHtml(parts) {
     const title = escapeHtml(parts.title || "Question");
-    const result = escapeHtml(formatReviewResult(parts.result));
     const prompt = escapeHtml(cleanLines(parts.prompt).join("\n"));
     const answers = (parts.answers || []).map((answer) => {
       const labels = [];
@@ -124,7 +127,7 @@
       const source = escapeHtml(image.dataUrl || "");
       return source ? `<figure><img src="${source}" alt="${alt}"></figure>` : "";
     }).filter(Boolean).join("");
-    return `<article><h2>${title}</h2>${result ? `<p><strong>${result}</strong></p>` : ""}<p>${prompt.replace(/\n/g, "<br>")}</p>${images ? `<section class="images">${images}</section>` : ""}${answers ? `<section class="answers">${answers}</section>` : ""}</article>`;
+    return `<article><h2>${title}</h2><p>${prompt.replace(/\n/g, "<br>")}</p>${images ? `<section class="images">${images}</section>` : ""}${answers ? `<section class="answers">${answers}</section>` : ""}</article>`;
   }
 
   function chooseNearestCandidate(candidates, viewportHeight) {
